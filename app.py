@@ -11,8 +11,9 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# MYSQL
-
+# =========================
+# MYSQL CONFIG
+# =========================
 app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST')
 app.config['MYSQL_USER'] = os.getenv('MYSQL_USER')
 app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD')
@@ -21,105 +22,66 @@ app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
 
-# S3
-
+# =========================
+# AWS S3 CONFIG
+# =========================
 S3_BUCKET = os.getenv('S3_BUCKET')
 AWS_REGION = os.getenv('AWS_REGION')
 
 s3 = boto3.client(
     's3',
     region_name=AWS_REGION,
-    config=Config(
-        signature_version='s3v4'
-    )
+    config=Config(signature_version='s3v4')
 )
 
-IMAGE_EXTENSIONS = {
-    'png',
-    'jpg',
-    'jpeg',
-    'gif'
-}
+IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+MANUAL_EXTENSIONS = {'pdf', 'doc', 'docx'}
 
-MANUAL_EXTENSIONS = {
-    'pdf',
-    'doc',
-    'docx'
-}
-
-
+# =========================
+# HELPERS
+# =========================
 def allowed_image(filename):
-    return (
-        '.' in filename and
-        filename.rsplit('.',1)[1].lower()
-        in IMAGE_EXTENSIONS
-    )
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in IMAGE_EXTENSIONS
 
 
 def allowed_manual(filename):
-    return (
-        '.' in filename and
-        filename.rsplit('.',1)[1].lower()
-        in MANUAL_EXTENSIONS
-    )
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in MANUAL_EXTENSIONS
 
 
 def upload_to_s3(file, folder):
+    key = f"{folder}/{uuid.uuid4().hex}_{secure_filename(file.filename)}"
 
-    key = (
-        f"{folder}/"
-        f"{uuid.uuid4().hex}_"
-        f"{secure_filename(file.filename)}"
-    )
-
-    s3.upload_fileobj(
-        file,
-        S3_BUCKET,
-        key
-    )
-
+    s3.upload_fileobj(file, S3_BUCKET, key)
     return key
 
 
 def presigned_url(key):
-
     if not key:
         return None
 
     return s3.generate_presigned_url(
         'get_object',
-        Params={
-            'Bucket': S3_BUCKET,
-            'Key': key
-        },
+        Params={'Bucket': S3_BUCKET, 'Key': key},
         ExpiresIn=3600
     )
 
-
+# =========================
+# TABLE CREATION (MATCHES RDS)
+# =========================
 def create_tables():
-
     cur = mysql.connection.cursor()
 
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS equipment(
-
-        id INT AUTO_INCREMENT PRIMARY KEY,
-
-        equipment_name VARCHAR(100),
-
-        serial_number VARCHAR(100),
-
-        department VARCHAR(100),
-
-        purchase_date DATE,
-
-        status VARCHAR(50),
-
-        equipment_image VARCHAR(500),
-
-        manual_file VARCHAR(500)
-
-    )
+        CREATE TABLE IF NOT EXISTS equipment (
+            equipment_id INT AUTO_INCREMENT PRIMARY KEY,
+            equipment_name VARCHAR(100),
+            serial_number VARCHAR(100),
+            department VARCHAR(100),
+            purchase_date DATE,
+            status VARCHAR(50),
+            equipment_image VARCHAR(500),
+            manual_file VARCHAR(500)
+        )
     """)
 
     mysql.connection.commit()
@@ -129,41 +91,32 @@ def create_tables():
 with app.app_context():
     create_tables()
 
+# =========================
+# ROUTES
+# =========================
 
 @app.route('/')
 def index():
-
     cur = mysql.connection.cursor()
 
     cur.execute("""
-    SELECT *
-    FROM equipment
-    ORDER BY id DESC
+        SELECT *
+        FROM equipment
+        ORDER BY equipment_id DESC
     """)
 
     equipment = cur.fetchall()
-
     cur.close()
 
     for item in equipment:
+        item['image_url'] = presigned_url(item.get('equipment_image'))
+        item['manual_url'] = presigned_url(item.get('manual_file'))
 
-        item['image_url'] = presigned_url(
-            item.get('equipment_image')
-        )
-
-        item['manual_url'] = presigned_url(
-            item.get('manual_file')
-        )
-
-    return render_template(
-        'index.html',
-        equipment=equipment
-    )
+    return render_template('index.html', equipment=equipment)
 
 
-@app.route('/add', methods=['GET','POST'])
+@app.route('/add', methods=['GET', 'POST'])
 def add_equipment():
-
     if request.method == 'POST':
 
         equipment_name = request.form['equipment_name']
@@ -176,42 +129,27 @@ def add_equipment():
         manual_key = None
 
         file = request.files.get('equipment_image')
-
         if file and file.filename:
-            image_key = upload_to_s3(
-                file,
-                'equipment-images'
-            )
+            image_key = upload_to_s3(file, 'equipment-images')
 
         file = request.files.get('manual_file')
-
         if file and file.filename:
-            manual_key = upload_to_s3(
-                file,
-                'manuals'
-            )
+            manual_key = upload_to_s3(file, 'manuals')
 
         cur = mysql.connection.cursor()
 
         cur.execute("""
-        INSERT INTO equipment(
-
-            equipment_name,
-            serial_number,
-            department,
-            purchase_date,
-            status,
-            equipment_image,
-            manual_file
-
-        )
-
-        VALUES(%s,%s,%s,%s,%s,%s,%s)
-
-        """,
-
-        (
-
+            INSERT INTO equipment (
+                equipment_name,
+                serial_number,
+                department,
+                purchase_date,
+                status,
+                equipment_image,
+                manual_file
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (
             equipment_name,
             serial_number,
             department,
@@ -219,7 +157,6 @@ def add_equipment():
             status,
             image_key,
             manual_key
-
         ))
 
         mysql.connection.commit()
@@ -227,19 +164,16 @@ def add_equipment():
 
         return redirect('/')
 
-    return render_template(
-        'add_equipment.html'
-    )
+    return render_template('add_equipment.html')
 
 
-@app.route('/delete/<int:id>')
-def delete_equipment(id):
-
+@app.route('/delete/<int:equipment_id>')
+def delete_equipment(equipment_id):
     cur = mysql.connection.cursor()
 
     cur.execute(
-        "DELETE FROM equipment WHERE id=%s",
-        (id,)
+        "DELETE FROM equipment WHERE equipment_id=%s",
+        (equipment_id,)
     )
 
     mysql.connection.commit()
@@ -251,11 +185,14 @@ def delete_equipment(id):
 @app.route('/health')
 def health():
     return {
-        "status":"UP",
-        "database":"CONNECTED"
+        "status": "UP",
+        "database": "CONNECTED"
     }
 
 
+# =========================
+# RUN APP
+# =========================
 if __name__ == '__main__':
     app.run(
         host='0.0.0.0',
