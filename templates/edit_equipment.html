@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Edit Equipment</title>
+<link rel="stylesheet"
+href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Edit Equipment</h2>
+
+<form method="POST"
+enctype="multipart/form-data">
+
+<input type="hidden"
+name="existing_image"
+value="{{ equipment.equipment_image }}">
+
+<input type="hidden"
+name="existing_manual"
+value="{{ equipment.manual_file }}">
+
+<label>Equipment Name</label>
+
+<input type="text"
+name="equipment_name"
+value="{{ equipment.equipment_name }}"
+required>
+
+<label>Serial Number</label>
+
+<input type="text"
+name="serial_number"
+value="{{ equipment.serial_number }}"
+required>
+
+<label>Department</label>
+
+<input type="text"
+name="department"
+value="{{ equipment.department }}"
+required>
+
+<label>Purchase Date</label>
+
+<input type="date"
+name="purchase_date"
+value="{{ equipment.purchase_date }}"
+required>
+
+<label>Status</label>
+
+<select name="status">
+
+<option {% if equipment.status=='Active' %}selected{% endif %}>
+Active
+</option>
+
+<option {% if equipment.status=='Under Maintenance' %}selected{% endif %}>
+Under Maintenance
+</option>
+
+<option {% if equipment.status=='Decommissioned' %}selected{% endif %}>
+Decommissioned
+</option>
+
+</select>
+
+<label>Equipment Image</label>
+
+<input type="file"
+name="equipment_image">
+
+<label>Manual PDF</label>
+
+<input type="file"
+name="manual_file">
+
+<button type="submit">
+Update Equipment
+</button>
+
+</form>
+
+</div>
+
+</body>
+</html>

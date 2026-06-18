@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>MediTrack</title>
+</head>
+
+<body>
+
+<h1>MediTrack Equipment Inventory</h1>
+
+<a href="/add">
+Add Equipment
+</a>
+
+<hr>
+
+<table border="1">
+
+<tr>
+
+<th>ID</th>
+<th>Name</th>
+<th>Department</th>
+<th>Status</th>
+<th>Image</th>
+<th>Manual</th>
+<th>Delete</th>
+
+</tr>
+
+{% for item in equipment %}
+
+<tr>
+
+<td>{{ item.id }}</td>
+
+<td>{{ item.equipment_name }}</td>
+
+<td>{{ item.department }}</td>
+
+<td>{{ item.status }}</td>
+
+<td>
+
+{% if item.image_url %}
+<a href="{{ item.image_url }}">
+View Image
+</a>
+{% endif %}
+
+</td>
+
+<td>
+
+{% if item.manual_url %}
+<a href="{{ item.manual_url }}">
+Manual
+</a>
+{% endif %}
+
+</td>
+
+<td>
+
+<a href="/delete/{{ item.id }}">
+Delete
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>

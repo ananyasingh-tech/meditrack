@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Add Equipment</title>
+</head>
+
+<body>
+
+<h1>Add Equipment</h1>
+
+<form method="POST"
+enctype="multipart/form-data">
+
+Equipment Name
+
+<input
+type="text"
+name="equipment_name">
+
+<br><br>
+
+Serial Number
+
+<input
+type="text"
+name="serial_number">
+
+<br><br>
+
+Department
+
+<input
+type="text"
+name="department">
+
+<br><br>
+
+Purchase Date
+
+<input
+type="date"
+name="purchase_date">
+
+<br><br>
+
+Status
+
+<select name="status">
+
+<option>Active</option>
+
+<option>
+Under Maintenance
+</option>
+
+<option>
+Decommissioned
+</option>
+
+</select>
+
+<br><br>
+
+Equipment Image
+
+<input
+type="file"
+name="equipment_image">
+
+<br><br>
+
+Manual File
+
+<input
+type="file"
+name="manual_file">
+
+<br><br>
+
+<button type="submit">
+Save
+</button>
+
+</form>
+
+</body>
+</html>

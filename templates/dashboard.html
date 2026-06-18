@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+<link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+<h1>Equipment Dashboard</h1>
+
+<a class="btn" href="/add_equipment">Add Equipment</a>
+
+<br><br>
+
+<table>
+
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Department</th>
+<th>Status</th>
+<th>Actions</th>
+</tr>
+
+{% for item in equipment %}
+
+<tr>
+
+<td>{{ item.equipment_id }}</td>
+<td>{{ item.equipment_name }}</td>
+<td>{{ item.department }}</td>
+<td>{{ item.status }}</td>
+
+<td>
+
+<a class="btn"
+href="/equipment/{{ item.equipment_id }}">
+View
+</a>
+
+<a class="btn btn-success"
+href="/edit_equipment/{{ item.equipment_id }}">
+Edit
+</a>
+
+<a class="btn btn-danger"
+href="/delete_equipment/{{ item.equipment_id }}">
+Delete
+</a>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+</body>
+</html>
